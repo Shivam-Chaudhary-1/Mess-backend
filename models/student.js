@@ -73,17 +73,17 @@ const studentSchema = new mongoose.Schema({
             }
         }
    ],
+   totalDaysOutside:{
+       type:Number,
+       default:0
+    },
+    role:{
+        type:String,
+        default:"student",
+    },
     isAvailable:{
         type:Boolean,
         default:true
-    },
-    totalDaysOutside:{
-        type:Number,
-        default:0
-    },
-    role:{
-       type:String,
-       default:"student",
     },
     isGoingMarket:{
         type:Boolean,

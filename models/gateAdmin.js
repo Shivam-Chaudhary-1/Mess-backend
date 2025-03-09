@@ -1,17 +1,7 @@
 import mongoose from "mongoose";
 
-const adminSchema = new mongoose.Schema({
-    firstName:{
-        type:String,
-        required: true,
-        trim:true,
-    },
-    lastName:{
-        type:String,
-        required: true,
-        trim:true,
-    },
-    hostel:{
+const gateSchema = new mongoose.Schema({
+    gate:{
         type:String,
         required: true,
         trim:true,
@@ -20,10 +10,6 @@ const adminSchema = new mongoose.Schema({
         type:String,
         required: true,
         trim:true,
-    },
-    contactNumber:{
-        type:Number,
-        required:true,
     },
     password:{
         type:String,
@@ -47,7 +33,7 @@ const adminSchema = new mongoose.Schema({
     },
     role:{
         type:String,
-        default:"hostel-admin"
+        default:"gate-admin"
     },
     isEmailVerified:{
         type:Boolean,
@@ -55,6 +41,6 @@ const adminSchema = new mongoose.Schema({
     }
 })
 
-const Admin = mongoose.model('Admin', adminSchema);
+const Gate = mongoose.model('Gate', gateSchema);
 
-export default Admin
+export default Gate

@@ -34,6 +34,10 @@ const globalAdminSchema = new mongoose.Schema({
         type:String,
         default:'',
     },
+    token:{
+        type:String,
+        default:'',
+    },
     role:{
         type:String,
         default:"globalAdmin",
@@ -45,7 +49,7 @@ const globalAdminSchema = new mongoose.Schema({
     isEmailVerified:{
         type:Boolean,
         default:false
-    }
+    },
 })
 
 const GlobalAdmin = mongoose.model('GlobalAdmin', globalAdminSchema);

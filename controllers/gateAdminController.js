@@ -3,113 +3,71 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken'
 import dotenv from 'dotenv';
 import mailSender from '../config/mailSender.js';
+import Gate from '../models/gateAdmin.js';
 dotenv.config();
 
-export const createGlobalAdmin = async (req, res, next) => {
+export const createGatelAdmin = async (req, res, next) => {
     try{
-        const {firstName, lastName, email, contactNumber, password, confirmPassword} = req.body;
+        const {gate, email, password, confirmPassword} = req.body;
 
-        if(!firstName || !email || !contactNumber || !password || !lastName || !confirmPassword){
+        if(!gate || !email || !password || !confirmPassword){
             return res.json({
                 success:false,
                 message:"All fiels are required",
             })
         }
 
-        if(password!=confirmPassword){
+        if(password!==confirmPassword){
             return res.json({
                 success:false,
                 message:"Password and confirmPassword did not match"
             })
         }
+        
+        const user = await Gate.findOne({email:email});
 
-        const user = await GlobalAdmin.findOne({email:email});
+        const isHostelRegistered = await Gate.findOne({gate:gate});
 
-        if(user && user.isEmailVerified){
+        if(isHostelRegistered){
+            return res.json({
+                success:false,
+                message:"Hostel already registered"
+            })
+        }
+        
+        if(user){
             return res.json({
                 success:false,
                 message:"Admin already registered",
             })
         }
-
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const otp = String(Math.floor( 100000 + Math.random()*900000));
         
-        await GlobalAdmin.create({
-            firstName,
-            lastName,
+        const hashedPassword = await bcrypt.hash(password, 10);
+        // const otp = String(Math.floor( 100000 + Math.random()*900000));
+        
+        await Gate.create({
+            gate,
             email,
-            contactNumber,
             password:hashedPassword,
             confirmPassword:hashedPassword,
         })
-        // console.log("started");
+        console.log("data", email, gate, password, confirmPassword);
 
-        // await mailSender(email, `You have logged in successfully ,your email verification otp is ${otp}`,  `Email verification`);
-
-        // console.log("end");
-        
-
-        // return res.json({
-        //     success:true,
-        //     message:"admin created"
-        // })
+        return res.json({
+            success:true,
+            message:"admin created"
+        })
         next();
 
     } catch(error){
         return res.json({
             success:false,
-            message:"error in creating global admin",
+            message:"error in creating gate admin",
             error:error.message
         })
     }
 }
 
-
-
-export const sendOtp = async (req, res) => {
-    try{
-        const {email} = req.body;
-
-        if(!email){
-            return res.json({
-                success:false,
-                message:"Email is required",
-            })
-        }
-
-        console.log("email", email);
-    
-        const user = await GlobalAdmin.findOne({email:email});
-    
-        if(!user){
-            return res.json({
-                success:false,
-                message:"Admin is not present",
-            })
-        }
-        const otp = String(Math.floor( 100000 + Math.random()*900000));
-    
-        // send otp to email here
-        const info = await mailSender(email, `You have logged in successfully ,your email verification otp is ${otp}`,  `Email verification`);
-
-        // if successfull
-        user.otp = otp;
-        user.otpExpireTime = Date.now() + 5*60*1000;
-        await user.save();
-    
-        return res.json({
-            success:true,
-            message:"OTP sent successfully"
-        })
-    } catch(error){
-        return res.json({
-            success:false,
-            message:"error in sending otp",
-            error:error.message
-        })
-    }
-}
 
 export const verifyOtp = async (req, res) => {
     try{
@@ -123,7 +81,7 @@ export const verifyOtp = async (req, res) => {
             })
         }
 
-        const user = await GlobalAdmin.findOne({email:email});
+        const user = await Gate.findOne({email:email});
 
         if(!user){
             return res.json({
@@ -167,7 +125,7 @@ export const verifyOtp = async (req, res) => {
 }
 
 
-export const loginGlobalAdmin = async (req, res) => {
+export const loginGateAdmin = async (req, res) => {
     try{
         const {email, password} = req.body;
 
@@ -178,7 +136,7 @@ export const loginGlobalAdmin = async (req, res) => {
             })
         }
 
-        const user = await GlobalAdmin.findOne({email:email});
+        const user = await Gate.findOne({email:email});
         if(!user){
             return res.json({
                 success:false,
@@ -227,7 +185,7 @@ export const loginGlobalAdmin = async (req, res) => {
     }
 }
 
-export const logoutGlobalAdmin = async (req, res) => {
+export const logoutGateAdmin = async (req, res) => {
     try{
 
         res.clearCookie('token',{
@@ -250,61 +208,61 @@ export const logoutGlobalAdmin = async (req, res) => {
 
 
 
-export const updateGlobalAdmin = async (req, res) => {
-    try{
+// export const updateGlobalAdmin = async (req, res) => {
+//     try{
         
-        const token = req.cookies.token;
-        if(!token){
-            return res.json({
-                success:false,
-                message:"token is not found"
-            })
-        }
+//         const token = req.cookies.token;
+//         if(!token){
+//             return res.json({
+//                 success:false,
+//                 message:"token is not found"
+//             })
+//         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const userId=decoded.id;
+//         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+//         const userId=decoded.id;
 
-        if(!userId){
-            return res.json({
-                success:false,
-                message:"Id not found"
-            })
-        }
+//         if(!userId){
+//             return res.json({
+//                 success:false,
+//                 message:"Id not found"
+//             })
+//         }
 
-        const user = await GlobalAdmin.findById(userId);
-        if(user.role!=="globalAdmin"){
-            return res.json({
-                success:false,
-                message:"Protected route for global admin"
-            })
-        }
+//         const user = await GlobalAdmin.findById(userId);
+//         if(user.role!=="globalAdmin"){
+//             return res.json({
+//                 success:false,
+//                 message:"Protected route for global admin"
+//             })
+//         }
 
-        const {firstName, lastName, email, contactNumber} = req.body;
+//         const {firstName, lastName, email, contactNumber} = req.body;
 
-        await GlobalAdmin.findByIdAndUpdate((userId),
-            {
-                firstName:firstName,
-                lastName:lastName,
-                email:email,
-                contactNumber:contactNumber
-            },
-            {new:true}
-        )
+//         await GlobalAdmin.findByIdAndUpdate((userId),
+//             {
+//                 firstName:firstName,
+//                 lastName:lastName,
+//                 email:email,
+//                 contactNumber:contactNumber
+//             },
+//             {new:true}
+//         )
 
-        //send mail here
+//         //send mail here
         
-        return res.json({
-            success:true,
-            message:"Updated successfully"
-        })
+//         return res.json({
+//             success:true,
+//             message:"Updated successfully"
+//         })
 
-    } catch(error){
-        return res.json({
-            success:false,
-            message:"Updation failed in Global admin"
-        })
-    }
-}
+//     } catch(error){
+//         return res.json({
+//             success:false,
+//             message:"Updation failed in Global admin"
+//         })
+//     }
+// }
 
 export const updatePassword = async (req, res) =>{
     try{
@@ -330,7 +288,7 @@ export const updatePassword = async (req, res) =>{
        const decoded = jwt.verify(token, process.env.JWT_SECRET);
        const userId = decoded.id;
 
-       const user = await GlobalAdmin.findById(userId);
+       const user = await Gate.findById(userId);
        
        const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -355,41 +313,63 @@ export const updatePassword = async (req, res) =>{
     }
 }
 
-export const getAllDetailsOfGlobalAdmin = async (req, res) => {
+export const getAllGateAdmins = async (req, res) => {
     try{
-        const token = req.cookies.token;
-        if(!token){
+       
+        const gateAdmins = await Gate.find({});
+
+        if(!gateAdmins){
             return res.json({
                 success:false,
-                message:"Token is not available"
-            })
-        }
-
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const userId = decoded.id;
-
-        const user = await GlobalAdmin.findById(userId);
-        user.password="";
-        user.confirmPassword="";
-
-        
-        if(!user){
-            return res.json({
-                success:false,
-                message:"User not found"
+                message:"No gate Admins presents"
             })
         }
 
         return res.json({
             success:true,
             message:"Details of global admin",
-            user
+            gateAdmins
         })
 
     } catch(error){
         return res.json({
             success:false,
             message:"Error in getting details of global admin"
+        })
+    }
+}
+
+export const deleteGateAdmin = async (req, res) =>{
+    try{
+
+        const {gate} = req.body;
+
+        if(!gate){
+            return res.json({
+                success:false,
+                message:"Gate is required"
+            })
+        }
+        
+        const result = await Gate.findOneAndDelete({gate});
+        
+        if(!result){
+            return res.json({
+                success:false,
+                message:"Gate is not deleted"
+            })
+        }
+
+        return res.json({
+            success:true,
+            message:"Gate admin got deleted"
+        })
+        
+
+    } catch(error){
+        return res.json({
+            success:false,
+            message:error.message
         })
     }
 }

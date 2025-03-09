@@ -1,62 +1,64 @@
 import Admin from '../models/admin.js';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 
 export const createHostelAdmin = async (req, res) => {
     try{
-        const {firstName, lastName, hostel, email, contactNumber, role, password, confirmPassword} = req.body;
-
-        if(!firstName || !password || !confirmPassword  || !lastName|| !hostel || !email || !contactNumber || !role){
+        const {firstName, lastName, hostel, email, contactNumber, password, confirmPassword} = req.body;
+        
+        console.log("Admin created successfully", firstName, lastName, hostel, email, contactNumber, password, confirmPassword);
+        if(!firstName || !lastName || !hostel  || !email|| !contactNumber || !password || !confirmPassword){
             return res.json({
                 success:false,
                 message:"All fields are required"
             })
         }
-
-        if(password!=confirmPassword){
+        
+        if(password!==confirmPassword){
             return res.json({
                 success:false,
                 message:"Password and confirmPassword did not match"
             })
         }
-
-        const admin = await Admin.findOne({email:email});
-
+        
+        let admin = await Admin.findOne({email:email});
+        
         if(admin){
             return res.json({
                 success:false,
                 message:"Admin already registered",
             })
         }
-
+        
         admin = await Admin.findOne({hostel:hostel});
-
+        
         if(admin){
-            return res.json({
+        return res.json({
                 success:false,
-                message:"This hostel has its admin already",
+                message:"This hostel already registered",
             })
         }
-
-
+                
+                
         const hashedPassword = await bcrypt.hash(password, 10);
-
+        
         await Admin.create({
             firstName,
             lastName,
             hostel,
             email,
             contactNumber,
-            role,
             password:hashedPassword,
             confirmPassword:hashedPassword
         })
+        console.log("Admin created successfully-", firstName, lastName, hostel, email, contactNumber, password, confirmPassword);
 
         //send email
 
 
         return res.json({
             success:true,
-            message:"Admin created successfully"
+            message:"Admin created successfully",
         })
 
     } catch(error){
@@ -80,16 +82,18 @@ export const loginHostelAdmin = async (req, res) =>{
             })
         }
 
-        const admin = await Admin.findOne({email: email});
+        console.log("hostel");
 
-        if(!admin){
+        const user = await Admin.findOne({email: email});
+
+        if(!user){
             return res.json({
                 success:false,
                 message:"Admin not found"
             })
         }
 
-        const isMatch = await bcrypt.compare(password, admin.password);
+        const isMatch = await bcrypt.compare(password, user.password);
 
         if(!isMatch){
             return res.json({
@@ -98,20 +102,27 @@ export const loginHostelAdmin = async (req, res) =>{
             })
         }
 
-        const token = jwt.sign({id:admin._id}, process.env.JWT_SECRET, {expiresIn:'7d'});
+        const token = jwt.sign({id:user._id}, process.env.JWT_SECRET, {expiresIn:'7d'});
 
         res.cookie('token', token, {
             httpOnly:true,
             sameSite: 'none',
+            secure:true,
             maxAge:new Date(Date.now() + 7*24*60*60*1000)
         })
+
+        user.token = token;
+        await user.save();
+
+        user.password="";
+        user.confirmPassword="";
 
         // is anything remaining
 
         return res.json({
             success:true,
             message:"Admin logged in successfully",
-            data:admin
+            user
         })
 
     } catch(error){
@@ -151,6 +162,7 @@ export const logoutHostelAdmin = async (req, res) => {
         res.clearCookie('token',{
             httpOnly:true,
             sameSite: 'none',
+            secure:true
         })
 
         return res.json({
@@ -179,10 +191,12 @@ export const getAllHostelAdmin = async (req, res) => {
             })
         }
 
+        // console.log("All hostel admin found", admins);
+
         return res.json({
             success:true,
             message:"All hostel admin found",
-            data:admins
+            admins
         })
 
      } catch(error){
@@ -198,6 +212,7 @@ export const deleteHostelAdmin = async (req, res) => {
     try{
 
         const {hostel} = req.body;
+        console.log("hostel", hostel);
 
         if(!hostel){
             return res.json({
@@ -235,14 +250,15 @@ export const deleteHostelAdmin = async (req, res) => {
 export const updateHostelAdmin = async (req, res) => {
     try{
 
-        const {firstName, lastName, contactNumber} = req.body;
+        const {firstName, lastName, contactNumber, email} = req.body;
 
-        if(!firstName || !lastName || !contactNumber){
+        if(!firstName || !lastName || !contactNumber || !email){
             return res.json({
                 success:false,
                 message:"All fields are required"
             })
         }
+        console.log("updating..", firstName, lastName, contactNumber, email)
 
         const token = req.cookies.token;
 
@@ -265,11 +281,13 @@ export const updateHostelAdmin = async (req, res) => {
             })
         }
 
-        await admin.save({
-            contactNumber:contactNumber,
-            firstName:firstName,
-            lastName:lastName
-        })
+        admin.contactNumber=contactNumber,
+        admin.firstName=firstName,
+        admin.lastName=lastName,
+
+        await admin.save();
+
+        console.log("fn", admin.firstName);
 
         return res.json({
             success:true,
