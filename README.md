@@ -1,3 +1,3 @@
-Backend Code for our Hostel Mess webApp.
+Frontend Code for our Hostel Mess webApp.
 
 Frontend is here- 👉 https://github.com/Shivam-Chaudhary-1/Mess-frontend/tree/main?tab=readme-ov-file
